@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="9c303c9c-456c-43da-b6cf-b9c13d39d44a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<os:object-store name="file-os" doc:name="Object store" doc:id="ea41d37c-d2f3-4dd5-a83f-0c9cdc18e33b" />
+	<flow name="handling-object-storeFlow4" doc:id="2ce79745-eab1-4326-a5b0-bf891bdddcbf" >
+		<http:listener doc:name="GET /containsKey" doc:id="3ea3c903-dec5-44c6-abfa-156af31c91e8" config-ref="HTTP_Listener_config" path="/containsKey"/>
+		<os:contains doc:name="Contains" doc:id="a69a1d25-ad7f-4286-bec2-84ecd582836d" key="#[attributes.queryParams.key]" objectStore="file-os"/>
+		<ee:transform doc:name="Transform Message" doc:id="7022105c-89cd-46e2-806b-fa6f2eef26ef" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="handling-object-storeFlow3" doc:id="71d2f7f6-d50b-405f-be29-e1203d2239c7" >
+		<http:listener doc:name="/clearOS" doc:id="67256a0d-dca9-4cc1-8dd7-c29562078f2b" config-ref="HTTP_Listener_config" path="/clearOS"/>
+		<os:clear doc:name="Clear" doc:id="46558bb5-f561-4c8d-8470-e6a79f8adc6b" objectStore="file-os"/>
+		<ee:transform doc:name="Transform Message" doc:id="e48294ac-9051-4879-8f3c-4ae393b0160b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "The object store was cleared successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="handling-object-storeFlow2" doc:id="ce4f6970-9ce3-4edd-8b3f-d17930a902ef" >
+		<http:listener doc:name="GET /retrieveAll" doc:id="eff228f4-b9e2-42d2-aa01-f948abf7c6ef" config-ref="HTTP_Listener_config" path="/retrieveAll"/>
+		<os:retrieve-all doc:name="Retrieve all" doc:id="fa4563bf-e84b-4673-93ff-aa9ce998f927" objectStore="file-os"/>
+		<ee:transform doc:name="Transform Message" doc:id="14e082ec-4d9c-41ff-853c-7dcaf9c237eb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="handling-object-storeFlow1" doc:id="9cd66dda-6ade-4c10-9974-8034df3e2a68" >
+		<http:listener doc:name="GET /retrieveValueByKey" doc:id="a707b301-0d84-48fc-b2c1-4a8dbb7e913d" config-ref="HTTP_Listener_config" path="/retrieveValueByKey"/>
+		<os:retrieve doc:name="Retrieve" doc:id="47f662a4-6391-4dba-93b0-e49e5a60d0c5" key="#[attributes.queryParams.key]" objectStore="file-os">
+			<os:default-value ><![CDATA[#['DefaultValue']]]></os:default-value>
+		</os:retrieve>
+		<ee:transform doc:name="Transform Message" doc:id="b6ebacf3-236c-4761-aabb-e010853a1975" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="85c01742-cc30-4854-bdf0-3dc1bedf6c4b" message="#[payload]"/>
+	</flow>
+	<flow name="handling-object-storeFlow" doc:id="78cbbe2d-a38b-4175-b423-907167f01ad4" >
+		<http:listener doc:name="POST /store-kv" doc:id="b4245919-59e3-4a67-b155-36f7073249b4" config-ref="HTTP_Listener_config" path="/store-kv" allowedMethods="POST"/>
+		<os:store doc:name="StoreInFileOs" doc:id="848a3b9c-d9d2-4ea9-8c6d-13f37610ae2a" objectStore="file-os" key="#[payload.key]">
+			<os:value ><![CDATA[#[payload.value]]]></os:value>
+		</os:store>
+		<ee:transform doc:name="Response Message" doc:id="f94df1c5-2b2f-438c-b7db-76ae1281de05" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "The Key-Value pair was stored successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="330f001a-316c-434b-be97-81e69530d662" message="#[payload]"/>
+	</flow>
+</mule>
